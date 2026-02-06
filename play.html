@@ -31,18 +31,16 @@
     font-size: 16px;
     box-shadow: 0 0 15px #00ff9955;
     margin-bottom: 20px;
+    user-select: none;
   }
 
-  #panel {
-    width: 100%;
-    max-width: 620px;
-    background: #1b1b1b;
-    border-radius: 14px;
-    padding: 20px;
-    box-shadow: 0 0 30px #000;
+  #homeBtn:hover {
+    background: #00cc77;
   }
 
   #buttonGrid {
+    width: 100%;
+    max-width: 620px;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 16px;
@@ -59,33 +57,12 @@
     cursor: pointer;
     box-shadow: 0 6px 20px #00ff9955;
     transition: transform 0.15s, box-shadow 0.15s;
+    user-select: none;
   }
 
   .gridBtn:hover {
     transform: translateY(-3px);
     box-shadow: 0 10px 30px #00ff99aa;
-  }
-
-  /* Back button (DVD mode) */
-  #backBtn {
-    position: fixed;
-    bottom: 20px;
-    left: 20px;
-    padding: 10px 14px;
-    font-family: monospace;
-    background: #00ff99;
-    color: #121212;
-    border: none;
-    border-radius: 8px;
-    font-weight: bold;
-    cursor: pointer;
-    opacity: 0.15;
-    transition: opacity 0.3s;
-    z-index: 10;
-  }
-
-  #backBtn:hover {
-    opacity: 1;
   }
 </style>
 </head>
@@ -93,109 +70,31 @@
 
 <button id="homeBtn">Home</button>
 
-<div id="panel">
-  <div id="buttonGrid"></div>
-</div>
+<div id="buttonGrid"></div>
 
 <script>
-  const buttonGrid = document.getElementById('buttonGrid');
   const homeBtn = document.getElementById('homeBtn');
+  const buttonGrid = document.getElementById('buttonGrid');
 
-  homeBtn.onclick = () => window.location.href = 'index.html';;
+  homeBtn.onclick = () => window.location.href = 'index.html'; // Redirect to home page
 
-  function runDVDBounce() {
-    document.body.innerHTML = '';
-    document.body.style.margin = '0';
-    document.body.style.overflow = 'hidden';
-    document.body.style.background = '#000';
-
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    document.body.appendChild(canvas);
-
-    const backBtn = document.createElement('button');
-    backBtn.id = 'backBtn';
-    backBtn.textContent = '← Back';
-    backBtn.onclick = () => location.reload();
-    document.body.appendChild(backBtn);
-
-    function resize() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    }
-    resize();
-    window.addEventListener('resize', resize);
-
-    let x = 100, y = 100;
-    let vx = 5, vy = 4;
-    let color = '#00ff99';
-    let bounces = 0;
-    let corners = 0;
-
-    ctx.font = '48px monospace';
-
-    function randColor() {
-      return '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
-    }
-
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      ctx.font = '48px monospace';
-      const text = 'DVD';
-      const metrics = ctx.measureText(text);
-      const textW = metrics.width;
-      const textH = 48;
-
-      ctx.fillStyle = color;
-      ctx.fillText(text, x, y);
-
-      x += vx;
-      y += vy;
-
-      let hitX = false;
-      let hitY = false;
-
-      if (x <= 0 || x + textW >= canvas.width) {
-        vx *= -1;
-        hitX = true;
-        bounces++;
-      }
-      if (y - textH <= 0 || y >= canvas.height) {
-        vy *= -1;
-        hitY = true;
-        bounces++;
-      }
-
-      if (hitX && hitY) {
-        corners++;
-        color = randColor();
-      }
-
-      ctx.fillStyle = '#0f0';
-      ctx.font = '18px monospace';
-      ctx.fillText(`Bounces: ${bounces}`, 15, 25);
-      ctx.fillText(`Corners: ${corners}`, 15, 50);
-
-      requestAnimationFrame(draw);
-    }
-
-    draw();
-  }
-
+  // Define buttons with labels and URLs (or functions)
   const buttons = [
-    { label: 'DVD Bouncing Counter', onClick: runDVDBounce },
-    { label: 'Play', onClick: () => alert('Play clicked') },
-    { label: 'Settings', onClick: () => alert('Settings clicked') },
-    { label: 'Help', onClick: () => alert('Help clicked') },
-    { label: 'Profile', onClick: () => alert('Profile clicked') }
+    { label: 'DVD Bouncing Counter', url: 'dvd.html' },
+    { label: 'Play', url: 'play.html' },
+    { label: 'Settings', url: 'settings.html' },
+    { label: 'Help', url: 'help.html' },
+    { label: 'Profile', url: 'profile.html' },
   ];
 
-  buttons.forEach(b => {
+  // Create buttons dynamically
+  buttons.forEach(({label, url}) => {
     const btn = document.createElement('button');
     btn.className = 'gridBtn';
-    btn.textContent = b.label;
-    btn.onclick = b.onClick;
+    btn.textContent = label;
+    btn.onclick = () => {
+      if(url) window.location.href = url;
+    };
     buttonGrid.appendChild(btn);
   });
 </script>
