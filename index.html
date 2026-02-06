@@ -2,132 +2,115 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Eval with History</title>
+<title>Eval with Named History</title>
 <style>
   body {
     background: #121212;
     color: #eee;
     font-family: monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
     padding: 20px;
   }
-  #input {
+  #input, #nameSelector {
     width: 100%;
     max-width: 600px;
     font-size: 16px;
-    padding: 10px;
+    padding: 12px 10px;
     background: #222;
     border: none;
     color: #eee;
     border-radius: 4px;
     outline: none;
+    margin-bottom: 15px;
+    box-sizing: border-box;
   }
-  #output {
-    margin-top: 15px;
+  #runBtn {
     max-width: 600px;
-    background: #1a1a1a;
-    padding: 15px;
-    white-space: pre-wrap;
-    min-height: 50px;
-    border-radius: 4px;
-  }
-  #history {
-    margin-top: 20px;
-    max-width: 600px;
-  }
-  #history h3 {
-    margin-bottom: 10px;
-  }
-  .history-item {
-    background: #222;
-    padding: 8px;
-    margin-bottom: 6px;
-    border-radius: 4px;
-    cursor: pointer;
-    user-select: none;
-    overflow-wrap: break-word;
-  }
-  .history-item:hover {
-    background: #333;
-  }
-  #clear-history {
-    margin-top: 10px;
-    background: #ff4444;
+    width: 100%;
+    padding: 12px;
+    background: #00ff99;
     border: none;
-    padding: 8px 12px;
-    border-radius: 4px;
-    color: white;
+    border-radius: 6px;
+    color: #121212;
+    font-weight: bold;
     cursor: pointer;
+    font-size: 16px;
+    box-shadow: 0 0 10px #00ff99;
+    transition: background 0.3s;
+  }
+  #runBtn:hover {
+    background: #00cc77;
   }
 </style>
 </head>
 <body>
 
-<input id="input" placeholder="Type any JS command and hit Enter" autofocus />
-<pre id="output"></pre>
-
-<div id="history">
-  <h3>History (click to rerun)</h3>
-  <div id="history-list"></div>
-  <button id="clear-history">Clear History</button>
-</div>
+<input id="input" placeholder="Type any JS command here..." autofocus autocomplete="off" spellcheck="false" />
+<select id="nameSelector" size="5" title="Select a saved script to run"></select>
+<button id="runBtn">Run & Save</button>
 
 <script>
   const input = document.getElementById('input');
-  const output = document.getElementById('output');
-  const historyList = document.getElementById('history-list');
-  const clearBtn = document.getElementById('clear-history');
+  const nameSelector = document.getElementById('nameSelector');
+  const runBtn = document.getElementById('runBtn');
 
-  // Load history from localStorage or empty array
-  let history = JSON.parse(localStorage.getItem('evalHistory') || '[]');
+  // History stored as array of objects: {name: string, code: string}
+  let history = JSON.parse(localStorage.getItem('evalNamedHistory') || '[]');
 
   function saveHistory() {
-    localStorage.setItem('evalHistory', JSON.stringify(history));
+    localStorage.setItem('evalNamedHistory', JSON.stringify(history));
   }
 
   function renderHistory() {
-    historyList.innerHTML = '';
-    history.forEach((cmd, i) => {
-      const div = document.createElement('div');
-      div.className = 'history-item';
-      div.textContent = cmd.length > 80 ? cmd.slice(0, 80) + '…' : cmd;
-      div.title = cmd;
-      div.addEventListener('click', () => {
-        input.value = cmd;
-        runCommand(cmd);
-      });
-      historyList.appendChild(div);
+    nameSelector.innerHTML = '';
+    history.forEach(({name, code}, i) => {
+      const option = document.createElement('option');
+      option.value = i;
+      option.textContent = name.length > 50 ? name.slice(0, 47) + '…' : name;
+      option.title = `Name: ${name}\nCode: ${code}`;
+      nameSelector.appendChild(option);
     });
   }
 
-  function runCommand(cmd) {
+  function runCode(code) {
     try {
-      const result = eval(cmd);
-      output.textContent = 'Result: ' + result;
+      eval(code);
+      // No visible output per request
     } catch (err) {
-      output.textContent = 'Error: ' + err.message;
+      alert('Error: ' + err.message);
     }
   }
 
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      const cmd = input.value.trim();
-      if (!cmd) return;
-      runCommand(cmd);
-      // Save to history (avoid duplicates)
-      if (!history.includes(cmd)) {
-        history.unshift(cmd);
-        if (history.length > 20) history.pop(); // limit history size
-        saveHistory();
-        renderHistory();
-      }
-      input.value = '';
+  runBtn.addEventListener('click', () => {
+    const code = input.value.trim();
+    if (!code) return alert('Please enter some JS code to run.');
+    const name = prompt('Name this script:', '')?.trim();
+    if (!name) return alert('You must provide a name to save this script.');
+
+    runCode(code);
+
+    // Save new entry, avoid duplicates by code
+    if (!history.some(item => item.code === code)) {
+      history.unshift({name, code});
+      if (history.length > 50) history.pop();
+      saveHistory();
+      renderHistory();
     }
+
+    input.value = '';
   });
 
-  clearBtn.addEventListener('click', () => {
-    history = [];
-    saveHistory();
-    renderHistory();
+  // Select history entry and run its code
+  nameSelector.addEventListener('change', () => {
+    const idx = +nameSelector.value;
+    if (history[idx]) {
+      runCode(history[idx].code);
+    }
   });
 
   // Initial render
