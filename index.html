@@ -2,104 +2,115 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Eval with Named History</title>
+<title>Eval with Named History + Delete</title>
 <style>
   body {
     background: #121212;
     color: #eee;
     font-family: monospace;
-    padding: 40px 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    min-height: 100vh;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    padding: 20px;
   }
-  #inputs {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 30px;
-    max-width: 600px;
+  #input {
     width: 100%;
-  }
-  input[type="text"] {
-    padding: 10px;
+    max-width: 600px;
     font-size: 16px;
-    border-radius: 4px;
-    border: none;
-    outline: none;
+    padding: 12px 10px;
     background: #222;
+    border: none;
     color: #eee;
+    border-radius: 4px;
+    outline: none;
+    margin-bottom: 15px;
+    box-sizing: border-box;
   }
-  #js-input {
-    flex-grow: 1;
-  }
-  #history {
-    max-width: 600px;
+  #historyList {
     width: 100%;
-  }
-  #history h3 {
-    margin-bottom: 10px;
-    text-align: center;
+    max-width: 600px;
+    max-height: 220px;
+    overflow-y: auto;
+    background: #222;
+    border-radius: 6px;
+    padding: 5px 0;
+    box-sizing: border-box;
   }
   .history-item {
-    background: #222;
-    padding: 10px 12px;
-    margin-bottom: 8px;
-    border-radius: 6px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 6px 12px;
+    border-bottom: 1px solid #444;
     cursor: pointer;
     user-select: none;
-    overflow-wrap: break-word;
+    color: #eee;
   }
   .history-item:hover {
     background: #333;
   }
-  .history-text {
-    flex-grow: 1;
-    margin-right: 12px;
+  .history-name {
+    flex: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    margin-right: 10px;
   }
   .delete-btn {
     background: #ff4444;
     border: none;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
     color: white;
     font-weight: bold;
-    font-size: 16px;
-    line-height: 20px;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
     cursor: pointer;
-    transition: background 0.3s;
+    flex-shrink: 0;
+    line-height: 18px;
+    text-align: center;
   }
   .delete-btn:hover {
-    background: #cc2222;
+    background: #cc0000;
+  }
+  #runBtn {
+    max-width: 600px;
+    width: 100%;
+    padding: 12px;
+    background: #00ff99;
+    border: none;
+    border-radius: 6px;
+    color: #121212;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 16px;
+    box-shadow: 0 0 10px #00ff99;
+    transition: background 0.3s;
+    margin-top: 15px;
+  }
+  #runBtn:hover {
+    background: #00cc77;
   }
 </style>
 </head>
 <body>
 
-<div id="inputs">
-  <input id="name-input" type="text" placeholder="Name your code snippet" />
-  <input id="js-input" type="text" placeholder="Type JS command here and press Enter" autofocus />
-</div>
-
-<div id="history">
-  <h3>History (click to run, ✖️ to delete)</h3>
-  <div id="history-list"></div>
-</div>
+<input id="input" placeholder="Type any JS command here..." autofocus autocomplete="off" spellcheck="false" />
+<div id="historyList" title="Click to run, X to delete"></div>
+<button id="runBtn">Run & Save</button>
 
 <script>
-  const jsInput = document.getElementById('js-input');
-  const nameInput = document.getElementById('name-input');
-  const historyList = document.getElementById('history-list');
+  const input = document.getElementById('input');
+  const historyList = document.getElementById('historyList');
+  const runBtn = document.getElementById('runBtn');
 
-  // Load history as array of objects {name, code}
-  let history = JSON.parse(localStorage.getItem('evalHistory') || '[]');
+  // History stored as array of objects: {name: string, code: string}
+  let history = JSON.parse(localStorage.getItem('evalNamedHistory') || '[]');
 
   function saveHistory() {
-    localStorage.setItem('evalHistory', JSON.stringify(history));
+    localStorage.setItem('evalNamedHistory', JSON.stringify(history));
   }
 
   function renderHistory() {
@@ -107,64 +118,67 @@
     history.forEach(({name, code}, i) => {
       const item = document.createElement('div');
       item.className = 'history-item';
+      item.title = `Name: ${name}\nCode: ${code}`;
 
-      const text = document.createElement('div');
-      text.className = 'history-text';
-      text.textContent = name || code.slice(0, 50) + (code.length > 50 ? '…' : '');
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'history-name';
+      nameSpan.textContent = name.length > 50 ? name.slice(0, 47) + '…' : name;
 
-      // Run code on click of text
-      text.addEventListener('click', () => {
-        try {
-          eval(code);
-        } catch (err) {
-          alert('Error: ' + err.message);
-        }
+      // Run code on clicking the name
+      nameSpan.addEventListener('click', () => {
+        runCode(code);
       });
 
       const delBtn = document.createElement('button');
       delBtn.className = 'delete-btn';
       delBtn.textContent = '×';
-      delBtn.title = 'Delete this snippet';
+      delBtn.title = 'Delete this script';
       delBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        history.splice(i, 1);
-        saveHistory();
-        renderHistory();
+        if (confirm(`Delete script "${name}"?`)) {
+          history.splice(i, 1);
+          saveHistory();
+          renderHistory();
+        }
       });
 
-      item.appendChild(text);
+      item.appendChild(nameSpan);
       item.appendChild(delBtn);
       historyList.appendChild(item);
     });
   }
 
-  jsInput.addEventListener('keydown', (e) => {
+  function runCode(code) {
+    try {
+      eval(code);
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  }
+
+  runBtn.addEventListener('click', () => {
+    const code = input.value.trim();
+    if (!code) return alert('Please enter some JS code to run.');
+    const name = prompt('Name this script:', '')?.trim();
+    if (!name) return alert('You must provide a name to save this script.');
+
+    runCode(code);
+
+    // Save new entry, avoid duplicates by code
+    if (!history.some(item => item.code === code)) {
+      history.unshift({name, code});
+      if (history.length > 50) history.pop();
+      saveHistory();
+      renderHistory();
+    }
+
+    input.value = '';
+  });
+
+  // Enter key triggers run button
+  input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
-      const code = jsInput.value.trim();
-      if (!code) return;
-
-      let name = nameInput.value.trim();
-      if (!name) {
-        name = code.length > 30 ? code.slice(0, 30) + '…' : code;
-      }
-
-      try {
-        eval(code);
-      } catch (err) {
-        alert('Error: ' + err.message);
-        return;
-      }
-
-      // Save new snippet to history (avoid exact duplicates)
-      if (!history.some(h => h.code === code)) {
-        history.unshift({name, code});
-        if (history.length > 20) history.pop();
-        saveHistory();
-        renderHistory();
-      }
-
-      jsInput.value = '';
-      nameInput.value = '';
+      runBtn.click();
     }
   });
 
