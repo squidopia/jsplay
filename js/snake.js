@@ -1,22 +1,30 @@
 (() => {
-  // Clear body and style setup
+  // Clear body and set styles
   document.body.innerHTML = '';
   Object.assign(document.body.style, {
     margin: '0',
-    overflow: 'hidden',
     background: '#000',
     color: '#0f0',
     fontFamily: 'monospace',
     userSelect: 'none',
     position: 'relative',
     height: '100vh',
+    overflow: 'hidden',
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    flexDirection: 'column',
   });
 
-  // Back button setup
+  const scale = 30;      // size of each cell in px
+  const gridSize = 15;   // 15x15 grid
+
+  const canvas = document.createElement('canvas');
+  canvas.width = scale * gridSize;
+  canvas.height = scale * gridSize;
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+
+  // Back button
   const backBtn = document.createElement('button');
   backBtn.textContent = '← Back';
   Object.assign(backBtn.style, {
@@ -38,120 +46,118 @@
     zIndex: '9999',
   });
   document.body.appendChild(backBtn);
-  backBtn.addEventListener('mouseenter', () => backBtn.style.opacity = '1');
-  backBtn.addEventListener('mouseleave', () => backBtn.style.opacity = '0.1');
+
+  backBtn.addEventListener('mouseenter', () => {
+    backBtn.style.opacity = '1';
+  });
+  backBtn.addEventListener('mouseleave', () => {
+    backBtn.style.opacity = '0.1';
+  });
   backBtn.addEventListener('click', () => {
-    window.location.href = '../play.html'; // Adjust if needed
+    window.location.href = '../play.html'; // change as needed
   });
 
-  // Create canvas
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  document.body.appendChild(canvas);
-
-  // Board settings
-  const gridSize = 15;
-  const tileSize = 30; // pixels per grid square
-  canvas.width = gridSize * tileSize;
-  canvas.height = gridSize * tileSize;
+  // Load highscore
+  let highscore = parseInt(localStorage.getItem('snakeHighscore')) || 0;
 
   // Game variables
   let snake = [{ x: 7, y: 7 }];
-  let direction = { x: 0, y: 0 };
-  let food = {};
+  let direction = { x: 1, y: 0 }; // start moving right
+  let food = null;
   let gameOver = false;
   let score = 0;
 
-  // Load highscore from localStorage
-  let highscore = parseInt(localStorage.getItem('snakeHighscore')) || 0;
-
-  // Place food at random position not overlapping snake
   function placeFood() {
     while (true) {
-      food.x = Math.floor(Math.random() * gridSize);
-      food.y = Math.floor(Math.random() * gridSize);
-      if (!snake.some(segment => segment.x === food.x && segment.y === food.y)) break;
+      const newFood = {
+        x: Math.floor(Math.random() * gridSize),
+        y: Math.floor(Math.random() * gridSize),
+      };
+      if (!snake.some(s => s.x === newFood.x && s.y === newFood.y)) {
+        food = newFood;
+        break;
+      }
     }
   }
 
   placeFood();
 
-  // Draw everything
+  function drawCell(x, y, color) {
+    ctx.fillStyle = color;
+    ctx.fillRect(x * scale, y * scale, scale - 1, scale - 1);
+  }
+
   function draw() {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    // Draw food
+    drawCell(food.x, food.y, '#00ff99');
+
     // Draw snake
-    ctx.fillStyle = '#00ff99';
-    snake.forEach(({ x, y }) => {
-      ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+    snake.forEach((segment, i) => {
+      drawCell(segment.x, segment.y, i === 0 ? '#0f0' : '#055005');
     });
 
-    // Draw food
-    ctx.fillStyle = '#ff4444';
-    ctx.fillRect(food.x * tileSize, food.y * tileSize, tileSize, tileSize);
-
-    // Draw score and highscore
+    // Draw score & highscore
     ctx.fillStyle = '#0f0';
     ctx.font = '20px monospace';
-    ctx.fillText(`Score: ${score}`, 10, 25);
-    ctx.fillText(`Highscore: ${highscore}`, 10, 50);
+    ctx.fillText(`Score: ${score}`, 10, canvas.height - 10);
+    ctx.fillText(`Highscore: ${highscore}`, 150, canvas.height - 10);
+
+    if (gameOver) {
+      ctx.fillStyle = '#f00';
+      ctx.font = '40px monospace';
+      ctx.fillText('Game Over!', canvas.width / 2 - 100, canvas.height / 2);
+      ctx.font = '20px monospace';
+      ctx.fillText('Press Space or R to Restart', canvas.width / 2 - 130, canvas.height / 2 + 30);
+    }
   }
 
-  // Update game state
   function update() {
     if (gameOver) return;
 
-    // Move snake by adding new head
+    // Calculate new head position
     const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
 
     // Check collisions with walls
-    if (
-      head.x < 0 || head.x >= gridSize ||
-      head.y < 0 || head.y >= gridSize ||
-      snake.some(segment => segment.x === head.x && segment.y === head.y)
-    ) {
+    if (head.x < 0 || head.x >= gridSize || head.y < 0 || head.y >= gridSize) {
       gameOver = true;
-      alert(`Game Over! Your score: ${score}`);
-      // Save highscore if beaten
-      if (score > highscore) {
-        highscore = score;
-        localStorage.setItem('snakeHighscore', highscore);
-        alert(`New Highscore: ${highscore}!`);
-      }
+      saveHighscore();
+      return;
+    }
+
+    // Check collisions with self
+    if (snake.some(s => s.x === head.x && s.y === head.y)) {
+      gameOver = true;
+      saveHighscore();
       return;
     }
 
     snake.unshift(head);
 
-    // Check if food eaten
+    // Check if ate food
     if (head.x === food.x && head.y === food.y) {
       score++;
       placeFood();
     } else {
-      snake.pop(); // Remove tail
+      snake.pop();
     }
   }
 
-  // Game loop timing
-  let lastTime = 0;
-  const speed = 7; // moves per second
-
-  function gameLoop(timestamp) {
-    if (!lastTime) lastTime = timestamp;
-    const delta = (timestamp - lastTime) / 1000;
-
-    if (delta > 1 / speed) {
-      update();
-      draw();
-      lastTime = timestamp;
+  function saveHighscore() {
+    if (score > highscore) {
+      highscore = score;
+      localStorage.setItem('snakeHighscore', highscore);
     }
-
-    if (!gameOver) requestAnimationFrame(gameLoop);
   }
 
-  // Controls (arrow keys / WASD)
+  // Input handling
   window.addEventListener('keydown', e => {
+    if (gameOver && (e.key === ' ' || e.key.toLowerCase() === 'r')) {
+      restart();
+      return;
+    }
     if (gameOver) return;
 
     switch (e.key) {
@@ -174,6 +180,20 @@
     }
   });
 
+  function restart() {
+    snake = [{ x: 7, y: 7 }];
+    direction = { x: 1, y: 0 };
+    score = 0;
+    gameOver = false;
+    placeFood();
+  }
+
+  function gameLoop() {
+    update();
+    draw();
+  }
+
+  setInterval(gameLoop, 150); // 150ms per frame (~6.6 FPS)
+
   draw();
-  requestAnimationFrame(gameLoop);
 })();
