@@ -11,6 +11,7 @@
     height: '100vh',
     overflow: 'hidden',
     display: 'flex',
+    flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'center',
   });
@@ -26,10 +27,22 @@
   Object.assign(canvas.style, {
     boxShadow: '0 0 20px 5px #00ff99aa, inset 0 0 20px 3px #00ff99cc',
     borderRadius: '12px',
+    display: 'block',
+    marginBottom: '20px',
   });
 
   document.body.appendChild(canvas);
   const ctx = canvas.getContext('2d');
+
+  // Container for scores under canvas
+  const scoreDiv = document.createElement('div');
+  scoreDiv.style.color = '#0f0';
+  scoreDiv.style.fontFamily = 'monospace';
+  scoreDiv.style.fontSize = '20px';
+  scoreDiv.style.textAlign = 'center';
+  scoreDiv.style.width = canvas.width + 'px';
+  scoreDiv.style.marginBottom = '10px';
+  document.body.appendChild(scoreDiv);
 
   // Back button
   const backBtn = document.createElement('button');
@@ -74,11 +87,6 @@
   let gameOver = false;
   let score = 0;
 
-  // For smooth interpolation
-  let lastTime = 0;
-  const frameDuration = 150; // 150ms per step
-  let accumulator = 0;
-
   function placeFood() {
     while (true) {
       const newFood = {
@@ -94,64 +102,66 @@
 
   placeFood();
 
-  function drawCell(x, y, color, offsetX = 0, offsetY = 0) {
+  function drawCell(x, y, color) {
     ctx.fillStyle = color;
     ctx.fillRect(
-      x * scale + offsetX,
-      y * scale + offsetY,
+      x * scale,
+      y * scale,
       scale - 1,
       scale - 1
     );
   }
 
+  // Draw subtle checkerboard background
+  function drawCheckerboard() {
+    for (let y = 0; y < gridSize; y++) {
+      for (let x = 0; x < gridSize; x++) {
+        const isLight = (x + y) % 2 === 0;
+        ctx.fillStyle = isLight ? '#003300' : '#002200'; // dark green shades
+        ctx.fillRect(x * scale, y * scale, scale, scale);
+      }
+    }
+  }
+
   function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawCheckerboard();
 
     // Draw food
     drawCell(food.x, food.y, '#00ff99');
 
-    // Draw snake - head and body with partial offset for smooth movement
-    for (let i = 0; i < snake.length; i++) {
-      const segment = snake[i];
-      // For the head, add interpolation offset
-      let offsetX = 0;
-      let offsetY = 0;
-      if (i === 0 && !gameOver) {
-        offsetX = -direction.x * scale * (1 - accumulator / frameDuration);
-        offsetY = -direction.y * scale * (1 - accumulator / frameDuration);
-      }
-      drawCell(segment.x, segment.y, i === 0 ? '#0f0' : '#055005', offsetX, offsetY);
-    }
+    // Draw snake
+    snake.forEach((segment, i) => {
+      drawCell(segment.x, segment.y, i === 0 ? '#0f0' : '#055005');
+    });
 
-    // Draw score & highscore
-    ctx.fillStyle = '#0f0';
-    ctx.font = '20px monospace';
-    ctx.fillText(`Score: ${score}`, 10, canvas.height - 10);
-    ctx.fillText(`Highscore: ${highscore}`, 150, canvas.height - 10);
+    // Draw score and highscore text (moved to scoreDiv now)
+    scoreDiv.textContent = `Score: ${score}    Highscore: ${highscore}`;
 
     if (gameOver) {
       ctx.fillStyle = '#f00';
       ctx.font = '40px monospace';
-      ctx.fillText('Game Over!', canvas.width / 2 - 100, canvas.height / 2);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Game Over!', canvas.width / 2, canvas.height / 2);
+
       ctx.font = '20px monospace';
-      ctx.fillText('Press Space or R to Restart', canvas.width / 2 - 130, canvas.height / 2 + 30);
+      ctx.fillText('Press Space or R to Restart', canvas.width / 2, canvas.height / 2 + 40);
     }
   }
 
   function update() {
     if (gameOver) return;
 
-    // Calculate new head position
     const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
 
-    // Check collisions with walls
+    // Wall collision
     if (head.x < 0 || head.x >= gridSize || head.y < 0 || head.y >= gridSize) {
       gameOver = true;
       saveHighscore();
       return;
     }
 
-    // Check collisions with self
+    // Self collision
     if (snake.some(s => s.x === head.x && s.y === head.y)) {
       gameOver = true;
       saveHighscore();
@@ -160,7 +170,6 @@
 
     snake.unshift(head);
 
-    // Check if ate food
     if (head.x === food.x && head.y === food.y) {
       score++;
       placeFood();
@@ -212,20 +221,16 @@
     placeFood();
   }
 
+  const frameDuration = 150; // ms per step
+  let lastTime = 0;
   function gameLoop(timestamp = 0) {
     if (!lastTime) lastTime = timestamp;
     const delta = timestamp - lastTime;
-    lastTime = timestamp;
-
-    accumulator += delta;
-
-    while (accumulator >= frameDuration) {
+    if (delta > frameDuration) {
       update();
-      accumulator -= frameDuration;
+      lastTime = timestamp;
     }
-
     draw();
-
     requestAnimationFrame(gameLoop);
   }
 
