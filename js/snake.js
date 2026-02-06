@@ -21,6 +21,13 @@
   const canvas = document.createElement('canvas');
   canvas.width = scale * gridSize;
   canvas.height = scale * gridSize;
+
+  // Add glowing green border to canvas
+  Object.assign(canvas.style, {
+    boxShadow: '0 0 20px 5px #00ff99aa, inset 0 0 20px 3px #00ff99cc',
+    borderRadius: '12px',
+  });
+
   document.body.appendChild(canvas);
   const ctx = canvas.getContext('2d');
 
@@ -67,6 +74,11 @@
   let gameOver = false;
   let score = 0;
 
+  // For smooth interpolation
+  let lastTime = 0;
+  const frameDuration = 150; // 150ms per step
+  let accumulator = 0;
+
   function placeFood() {
     while (true) {
       const newFood = {
@@ -82,22 +94,34 @@
 
   placeFood();
 
-  function drawCell(x, y, color) {
+  function drawCell(x, y, color, offsetX = 0, offsetY = 0) {
     ctx.fillStyle = color;
-    ctx.fillRect(x * scale, y * scale, scale - 1, scale - 1);
+    ctx.fillRect(
+      x * scale + offsetX,
+      y * scale + offsetY,
+      scale - 1,
+      scale - 1
+    );
   }
 
   function draw() {
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Draw food
     drawCell(food.x, food.y, '#00ff99');
 
-    // Draw snake
-    snake.forEach((segment, i) => {
-      drawCell(segment.x, segment.y, i === 0 ? '#0f0' : '#055005');
-    });
+    // Draw snake - head and body with partial offset for smooth movement
+    for (let i = 0; i < snake.length; i++) {
+      const segment = snake[i];
+      // For the head, add interpolation offset
+      let offsetX = 0;
+      let offsetY = 0;
+      if (i === 0 && !gameOver) {
+        offsetX = -direction.x * scale * (1 - accumulator / frameDuration);
+        offsetY = -direction.y * scale * (1 - accumulator / frameDuration);
+      }
+      drawCell(segment.x, segment.y, i === 0 ? '#0f0' : '#055005', offsetX, offsetY);
+    }
 
     // Draw score & highscore
     ctx.fillStyle = '#0f0';
@@ -188,12 +212,22 @@
     placeFood();
   }
 
-  function gameLoop() {
-    update();
+  function gameLoop(timestamp = 0) {
+    if (!lastTime) lastTime = timestamp;
+    const delta = timestamp - lastTime;
+    lastTime = timestamp;
+
+    accumulator += delta;
+
+    while (accumulator >= frameDuration) {
+      update();
+      accumulator -= frameDuration;
+    }
+
     draw();
+
+    requestAnimationFrame(gameLoop);
   }
 
-  setInterval(gameLoop, 150); // 150ms per frame (~6.6 FPS)
-
-  draw();
+  gameLoop();
 })();
