@@ -1,1 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Home - JSPlay</title>
+<style>
+  body {
+    background: #121212;
+    color: #eee;
+    font-family: monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    padding: 20px;
+  }
+  #createBtn {
+    max-width: 600px;
+    width: 100%;
+    padding: 12px;
+    background: #00ff99;
+    border: none;
+    border-radius: 6px;
+    color: #121212;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 16px;
+    box-shadow: 0 0 10px #00ff99;
+    transition: background 0.3s;
+    margin-top: 15px;
+  }
+  #createBtn:hover {
+    background: #00cc77;
+  }
+  #playBtn {
+    max-width: 600px;
+    width: 100%;
+    padding: 12px;
+    background: #00ff99;
+    border: none;
+    border-radius: 6px;
+    color: #121212;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 16px;
+    box-shadow: 0 0 10px #00ff99;
+    transition: background 0.3s;
+    margin-top: 15px;
+  }
+  #playBtn:hover {
+    background: #00cc77;
+  }
+  h1 {
+    margin-bottom: 20px;
+  }
+  p {
+    max-width: 600px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
 
+<h1>Welcome to My Cool App</h1>
+<p>Click "Create" to start building something new, or click "Play" to jump right into the action!</p>
+
+<button id="createBtn">Create</button>
+<button id="playBtn">Play</button>
+
+<script>
+  const createBtn = document.getElementById('createBtn');
+  const playBtn = document.getElementById('playBtn');
+
+  createBtn.addEventListener('click', () => {
+    window.location.href = 'create.html';
+
+  });
+
+  playBtn.addEventListener('click', () => {
+    window.location.href = 'create.html';
+
+  });
+</script>
+
+</body>
+</html>
