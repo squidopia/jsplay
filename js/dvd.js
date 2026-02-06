@@ -1,60 +1,26 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<title>DVD Bounce - JSPlay</title>
-<style>
-  body {
-    background: #121212;
-    color: #0f0;
-    font-family: monospace;
-    margin: 0;
-    padding: 0;
-    height: 100vh;
-    overflow: hidden;
-    user-select: none;
-    position: relative;
-  }
-  #backBtn {
-    position: fixed;
-    bottom: 10px;
-    left: 10px;
-    padding: 8px 15px;
-    font-size: 16px;
-    font-weight: bold;
-    background: #00ff99;
-    border: none;
-    border-radius: 8px;
-    color: #121212;
-    cursor: pointer;
-    box-shadow: 0 0 10px #00ff99;
-    opacity: 0.1;
-    transition: opacity 0.4s;
-    z-index: 9999;
-  }
-  #backBtn:hover {
-    opacity: 1;
-  }
-</style>
-</head>
-<body>
-
-<button id="backBtn">← Back</button>
-
-<script>
 (() => {
+  // Clear body and set styles
+  document.body.innerHTML = '';
+  Object.assign(document.body.style, {
+    margin: '0',
+    overflow: 'hidden',
+    background: '#000',
+    color: '#0f0',
+    fontFamily: 'monospace',
+    userSelect: 'none',
+    position: 'relative',
+    height: '100vh',
+  });
+
+  // Create canvas and append
   const c = document.createElement('canvas');
-  const ctx = c.getContext('2d');
+  c.width = window.innerWidth;
+  c.height = window.innerHeight;
+  c.style.display = 'block';
   document.body.appendChild(c);
+  const ctx = c.getContext('2d');
 
-  function resize() {
-    c.width = window.innerWidth;
-    c.height = window.innerHeight;
-  }
-  resize();
-  window.addEventListener('resize', resize);
-
-  // Load saved state or defaults
+  // Load saved state or set defaults
   let state = JSON.parse(localStorage.getItem('dvdState')) || {
     x: 100,
     y: 100,
@@ -65,10 +31,46 @@
     corner: 0,
   };
 
+  // Random color helper
   function randColor() {
     return '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
   }
 
+  // Back button setup
+  const backBtn = document.createElement('button');
+  backBtn.textContent = '← Back';
+  Object.assign(backBtn.style, {
+    position: 'fixed',
+    bottom: '10px',
+    left: '10px',
+    padding: '8px 15px',
+    fontSize: '16px',
+    fontWeight: 'bold',
+    background: '#00ff99',
+    border: 'none',
+    borderRadius: '8px',
+    color: '#121212',
+    cursor: 'pointer',
+    boxShadow: '0 0 10px #00ff99',
+    opacity: '0.1',
+    transition: 'opacity 0.4s',
+    userSelect: 'none',
+    zIndex: '9999',
+  });
+  document.body.appendChild(backBtn);
+
+  backBtn.addEventListener('mouseenter', () => {
+    backBtn.style.opacity = '1';
+  });
+  backBtn.addEventListener('mouseleave', () => {
+    backBtn.style.opacity = '0.1';
+  });
+  backBtn.addEventListener('click', () => {
+    localStorage.removeItem('dvdState'); // optional: reset saved state on back
+    window.location.href = './play.html'; // redirect to play.html in the same folder
+  });
+
+  // DVD text dimensions (approx)
   const dvdWidth = 80;
   const dvdHeight = 48;
 
@@ -79,13 +81,13 @@
     ctx.font = '48px monospace';
     ctx.fillText('DVD', state.x, state.y);
 
-    // Move
+    // Move position
     state.x += state.vx;
     state.y += state.vy;
 
     let bounced = false;
 
-    // Bounce X
+    // Bounce horizontally
     if (state.x + dvdWidth > c.width) {
       state.x = c.width - dvdWidth;
       state.vx = -state.vx;
@@ -96,7 +98,7 @@
       bounced = true;
     }
 
-    // Bounce Y
+    // Bounce vertically
     if (state.y > c.height) {
       state.y = c.height;
       state.vy = -state.vy;
@@ -109,43 +111,34 @@
 
     if (bounced) {
       state.count++;
-      // Check corner bounce: touching both X and Y edges simultaneously
+
+      // Check for corner bounce: hitting both edges
       const onLeftOrRight = (state.x === 0 || state.x === c.width - dvdWidth);
       const onTopOrBottom = (state.y === dvdHeight || state.y === c.height);
+
       if (onLeftOrRight && onTopOrBottom) {
         state.corner++;
         state.color = randColor();
       }
     }
 
-    // Draw counters
+    // Draw bounce counters
     ctx.fillStyle = '#0f0';
     ctx.font = '20px monospace';
     ctx.fillText('Bounces: ' + state.count, 10, 30);
     ctx.fillText('Corner Bounces: ' + state.corner, 10, 60);
 
-    // Save state
+    // Save state to localStorage
     localStorage.setItem('dvdState', JSON.stringify(state));
 
     requestAnimationFrame(draw);
   }
 
+  // Resize canvas on window resize
+  window.addEventListener('resize', () => {
+    c.width = window.innerWidth;
+    c.height = window.innerHeight;
+  });
+
   draw();
-
-  // Back button logic
-  const backBtn = document.getElementById('backBtn');
-  backBtn.addEventListener('mouseenter', () => {
-    backBtn.style.opacity = '1';
-  });
-  backBtn.addEventListener('mouseleave', () => {
-    backBtn.style.opacity = '0.1';
-  });
-  backBtn.addEventListener('click', () => {
-    localStorage.removeItem('dvdState'); // clear saved state if you want
-    window.location.href = './play.html'; // <-- Adjust this path if needed
-  });
 })();
-</script>
-
-</body>
-</html>
