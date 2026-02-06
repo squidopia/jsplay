@@ -135,7 +135,7 @@
         drawCell(segment.x, segment.y, '#0f0'); // head bright green
       } else {
         // Tail: lighter green, brighter than before
-        drawCell(segment.x, segment.y, '#33ff33');
+        drawCell(segment.x, segment.y, '#28cc28');
       }
     });
 
