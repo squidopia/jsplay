@@ -129,9 +129,14 @@
     // Draw food
     drawCell(food.x, food.y, '#00ff99');
 
-    // Draw snake
+    // Draw snake with brighter tail
     snake.forEach((segment, i) => {
-      drawCell(segment.x, segment.y, i === 0 ? '#0f0' : '#055005');
+      if (i === 0) {
+        drawCell(segment.x, segment.y, '#0f0'); // head bright green
+      } else {
+        // Tail: lighter green, brighter than before
+        drawCell(segment.x, segment.y, '#33ff33');
+      }
     });
 
     // Draw score and highscore text (moved to scoreDiv now)
@@ -221,7 +226,7 @@
     placeFood();
   }
 
-  const frameDuration = 150; // ms per step
+  const frameDuration = 200; // slowed down from 150ms to 200ms
   let lastTime = 0;
   function gameLoop(timestamp = 0) {
     if (!lastTime) lastTime = timestamp;
