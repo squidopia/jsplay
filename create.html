@@ -125,6 +125,8 @@
   const input = document.getElementById('input');
   const historyList = document.getElementById('historyList');
   const runBtn = document.getElementById('runBtn');
+  const homeBtn = document.getElementById('homeBtn');
+
 
   // History stored as array of objects: {name: string, code: string}
   let history = JSON.parse(localStorage.getItem('evalNamedHistory') || '[]');
@@ -132,7 +134,13 @@
   function saveHistory() {
     localStorage.setItem('evalNamedHistory', JSON.stringify(history));
   }
+  
+  
+  homeBtn.addEventListener('click', () => {
+    window.location.href = '../index.html';
+  });
 
+  
   function renderHistory() {
     historyList.innerHTML = '';
     history.forEach(({name, code}, i) => {
@@ -175,9 +183,6 @@
       alert('Error: ' + err.message);
     }
   }
-  homeBtn.addEventListener('click', () => {
-    window.location.href = '../index.html';
-  });
 
     
   runBtn.addEventListener('click', () => {
