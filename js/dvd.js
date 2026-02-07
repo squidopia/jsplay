@@ -12,15 +12,19 @@
     height: '100vh',
   });
 
-  // Create canvas and append
+  // Canvas
   const c = document.createElement('canvas');
-  c.width = window.innerWidth;
-  c.height = window.innerHeight;
-  c.style.display = 'block';
-  document.body.appendChild(c);
   const ctx = c.getContext('2d');
+  document.body.appendChild(c);
 
-  // Load saved state or set defaults
+  function resize() {
+    c.width = window.innerWidth;
+    c.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // Load state
   let state = JSON.parse(localStorage.getItem('dvdState')) || {
     x: 100,
     y: 100,
@@ -29,14 +33,15 @@
     color: '#00ff99',
     count: 0,
     corner: 0,
+    lastUpdate: Date.now(),
   };
 
-  // Random color helper
+  // Random color
   function randColor() {
     return '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
   }
 
-  // Back button setup
+  // Back button
   const backBtn = document.createElement('button');
   backBtn.textContent = '← Back';
   Object.assign(backBtn.style, {
@@ -54,26 +59,62 @@
     boxShadow: '0 0 10px #00ff99',
     opacity: '0.1',
     transition: 'opacity 0.4s',
-    userSelect: 'none',
     zIndex: '9999',
   });
   document.body.appendChild(backBtn);
 
-  backBtn.addEventListener('mouseenter', () => {
-    backBtn.style.opacity = '1';
-  });
-  backBtn.addEventListener('mouseleave', () => {
-    backBtn.style.opacity = '0.1';
-  });
-  backBtn.addEventListener('click', () => {
-    localStorage.removeItem('dvdState'); // optional: reset saved state on back
-    window.location.href = './play.html'; // redirect to play.html in the same folder
-  });
+  backBtn.onmouseenter = () => backBtn.style.opacity = '1';
+  backBtn.onmouseleave = () => backBtn.style.opacity = '0.1';
+  backBtn.onclick = () => {
+    localStorage.removeItem('dvdState');
+    window.location.href = './play.html';
+  };
 
-  // DVD text dimensions (approx)
+  // DVD size
   const dvdWidth = 80;
   const dvdHeight = 48;
 
+  // ----- SIMULATION STEP (TIME-BASED) -----
+  function update() {
+    state.x += state.vx;
+    state.y += state.vy;
+
+    let bounced = false;
+
+    if (state.x + dvdWidth > c.width) {
+      state.x = c.width - dvdWidth;
+      state.vx *= -1;
+      bounced = true;
+    } else if (state.x < 0) {
+      state.x = 0;
+      state.vx *= -1;
+      bounced = true;
+    }
+
+    if (state.y > c.height) {
+      state.y = c.height;
+      state.vy *= -1;
+      bounced = true;
+    } else if (state.y - dvdHeight < 0) {
+      state.y = dvdHeight;
+      state.vy *= -1;
+      bounced = true;
+    }
+
+    if (bounced) {
+      state.count++;
+
+      const onLR = (state.x === 0 || state.x === c.width - dvdWidth);
+      const onTB = (state.y === dvdHeight || state.y === c.height);
+
+      if (onLR && onTB) {
+        state.corner++;
+        state.color = randColor();
+      }
+    }
+  }
+
+  // ----- RENDER -----
   function draw() {
     ctx.clearRect(0, 0, c.width, c.height);
 
@@ -81,64 +122,28 @@
     ctx.font = '48px monospace';
     ctx.fillText('DVD', state.x, state.y);
 
-    // Move position
-    state.x += state.vx;
-    state.y += state.vy;
-
-    let bounced = false;
-
-    // Bounce horizontally
-    if (state.x + dvdWidth > c.width) {
-      state.x = c.width - dvdWidth;
-      state.vx = -state.vx;
-      bounced = true;
-    } else if (state.x < 0) {
-      state.x = 0;
-      state.vx = -state.vx;
-      bounced = true;
-    }
-
-    // Bounce vertically
-    if (state.y > c.height) {
-      state.y = c.height;
-      state.vy = -state.vy;
-      bounced = true;
-    } else if (state.y - dvdHeight < 0) {
-      state.y = dvdHeight;
-      state.vy = -state.vy;
-      bounced = true;
-    }
-
-    if (bounced) {
-      state.count++;
-
-      // Check for corner bounce: hitting both edges
-      const onLeftOrRight = (state.x === 0 || state.x === c.width - dvdWidth);
-      const onTopOrBottom = (state.y === dvdHeight || state.y === c.height);
-
-      if (onLeftOrRight && onTopOrBottom) {
-        state.corner++;
-        state.color = randColor();
-      }
-    }
-
-    // Draw bounce counters
     ctx.fillStyle = '#0f0';
     ctx.font = '20px monospace';
     ctx.fillText('Bounces: ' + state.count, 10, 30);
     ctx.fillText('Corner Bounces: ' + state.corner, 10, 60);
-
-    // Save state to localStorage
-    localStorage.setItem('dvdState', JSON.stringify(state));
-
-    requestAnimationFrame(draw);
   }
 
-  // Resize canvas on window resize
-  window.addEventListener('resize', () => {
-    c.width = window.innerWidth;
-    c.height = window.innerHeight;
-  });
+  // ----- MAIN LOOP -----
+  function loop() {
+    const now = Date.now();
+    let elapsed = now - state.lastUpdate;
+    state.lastUpdate = now;
 
-  draw();
+    const step = 16; // ~60 updates/sec
+    while (elapsed >= step) {
+      update();
+      elapsed -= step;
+    }
+
+    draw();
+    localStorage.setItem('dvdState', JSON.stringify(state));
+    requestAnimationFrame(loop);
+  }
+
+  loop();
 })();
