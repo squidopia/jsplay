@@ -1,44 +1,52 @@
 (() => {
-  // Setup canvas with fixed size and center it
-  const canvasWidth = 600;
-  const canvasHeight = 400;
+  // Setup fixed-size canvas container centered vertically and horizontally
+  const canvasWidth = 800;
+  const canvasHeight = 500;
 
-  document.body.style.margin = '0';
-  document.body.style.background = '#000';
-  document.body.style.color = '#0f0';
-  document.body.style.fontFamily = 'monospace';
-  document.body.style.userSelect = 'none';
-  document.body.style.display = 'flex';
-  document.body.style.flexDirection = 'column';
-  document.body.style.alignItems = 'center';
-  document.body.style.justifyContent = 'center';
-  document.body.style.height = '100vh';
+  // Body styling for centering content and black background
+  Object.assign(document.body.style, {
+    margin: '0',
+    background: '#000',
+    color: '#0f0',
+    fontFamily: 'monospace',
+    userSelect: 'none',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '100vh',
+  });
 
+  // Container div to hold canvas and back button
   const container = document.createElement('div');
-  container.style.position = 'relative';
-  container.style.width = canvasWidth + 'px';
-  container.style.height = canvasHeight + 'px';
-  container.style.background = '#121212';
-  container.style.boxShadow = '0 0 20px #00ff9955';
-  container.style.borderRadius = '12px';
-  container.style.overflow = 'hidden';
+  Object.assign(container.style, {
+    position: 'relative',
+    width: canvasWidth + 'px',
+    paddingBottom: '70px', // room for score texts below canvas
+  });
   document.body.appendChild(container);
 
-  const c = document.createElement('canvas');
-  c.width = canvasWidth;
-  c.height = canvasHeight;
-  c.style.background = '#000';
-  c.style.display = 'block';
-  container.appendChild(c);
-  const ctx = c.getContext('2d');
+  // Create canvas and add it
+  const canvas = document.createElement('canvas');
+  canvas.width = canvasWidth;
+  canvas.height = canvasHeight;
+  Object.assign(canvas.style, {
+    display: 'block',
+    background: '#121212',
+    borderRadius: '12px',
+    boxShadow: '0 0 20px #00ff9955',
+  });
+  container.appendChild(canvas);
+
+  const ctx = canvas.getContext('2d');
 
   // Back button
   const backBtn = document.createElement('button');
   backBtn.textContent = '← Back';
   Object.assign(backBtn.style, {
-    position: 'absolute',
-    bottom: '10px',
-    left: '10px',
+    position: 'fixed',
+    bottom: '20px',
+    left: '20px',
     padding: '8px 15px',
     fontSize: '16px',
     fontWeight: 'bold',
@@ -53,21 +61,26 @@
     userSelect: 'none',
     zIndex: '9999',
   });
-  container.appendChild(backBtn);
-  backBtn.addEventListener('mouseenter', () => backBtn.style.opacity = '1');
-  backBtn.addEventListener('mouseleave', () => backBtn.style.opacity = '0.1');
+  document.body.appendChild(backBtn);
+
+  backBtn.addEventListener('mouseenter', () => {
+    backBtn.style.opacity = '1';
+  });
+  backBtn.addEventListener('mouseleave', () => {
+    backBtn.style.opacity = '0.1';
+  });
   backBtn.addEventListener('click', () => {
-    window.location.href = 'play.html'; // change if your play page is somewhere else
+    window.location.href = 'play.html'; // adjust path if needed
   });
 
   // Game variables
-  const paddleWidth = 100;
+  const paddleWidth = 120;
   const paddleHeight = 15;
   let paddleX = (canvasWidth - paddleWidth) / 2;
-  const paddleY = canvasHeight - paddleHeight - 10;
+  const paddleY = canvasHeight - paddleHeight - 15;
   const paddleSpeed = 7;
 
-  let ballRadius = 12;
+  let ballRadius = 14;
   let ballX = canvasWidth / 2;
   let ballY = canvasHeight / 2;
   let ballSpeedX = 4;
@@ -96,33 +109,35 @@
     ctx.beginPath();
     ctx.fillStyle = '#00ff99';
     ctx.shadowColor = '#00ff99';
-    ctx.shadowBlur = 20;
+    ctx.shadowBlur = 25;
     ctx.arc(ballX, ballY, ballRadius, 0, Math.PI * 2);
     ctx.fill();
     ctx.closePath();
     ctx.shadowBlur = 0;
   }
 
-  // Draw score and highscore below the canvas
-  function drawScore() {
-    ctx.font = '20px monospace';
+  // Draw score and highscore below canvas, centered
+  function drawScores() {
+    ctx.font = '22px monospace';
     ctx.fillStyle = '#0f0';
     ctx.textAlign = 'center';
+    // Clear area below canvas first
+    ctx.clearRect(0, canvasHeight, canvasWidth, 70);
     ctx.fillText(`Score: ${score}`, canvasWidth / 2, canvasHeight + 30);
-    ctx.fillText(`Highscore: ${highscore}`, canvasWidth / 2, canvasHeight + 55);
+    ctx.fillText(`Highscore: ${highscore}`, canvasWidth / 2, canvasHeight + 60);
   }
 
-  // Draw game over screen overlay
+  // Draw game over overlay on canvas
   function drawGameOver() {
     ctx.fillStyle = 'rgba(0,0,0,0.7)';
     ctx.fillRect(0, 0, canvasWidth, canvasHeight);
     ctx.fillStyle = '#0f0';
-    ctx.font = '36px monospace';
+    ctx.font = '42px monospace';
     ctx.textAlign = 'center';
     ctx.fillText('GAME OVER', canvasWidth / 2, canvasHeight / 2 - 20);
-    ctx.font = '20px monospace';
-    ctx.fillText(`Final Score: ${score}`, canvasWidth / 2, canvasHeight / 2 + 20);
-    ctx.fillText('Press SPACE or R to Restart', canvasWidth / 2, canvasHeight / 2 + 60);
+    ctx.font = '24px monospace';
+    ctx.fillText(`Final Score: ${score}`, canvasWidth / 2, canvasHeight / 2 + 30);
+    ctx.fillText('Press SPACE or R to Restart', canvasWidth / 2, canvasHeight / 2 + 70);
   }
 
   // Update paddle position based on keys pressed
@@ -179,7 +194,7 @@
     }
   }
 
-  // Restart game function
+  // Restart game
   function restartGame() {
     ballX = canvasWidth / 2;
     ballY = canvasHeight / 2;
@@ -190,8 +205,8 @@
     gameOver = false;
   }
 
-  // Key listeners
-  window.addEventListener('keydown', (e) => {
+  // Key event listeners
+  window.addEventListener('keydown', e => {
     if (e.code === 'ArrowLeft') leftPressed = true;
     if (e.code === 'ArrowRight') rightPressed = true;
     if (e.code === 'KeyA') aPressed = true;
@@ -201,19 +216,20 @@
       restartGame();
     }
   });
-  window.addEventListener('keyup', (e) => {
+
+  window.addEventListener('keyup', e => {
     if (e.code === 'ArrowLeft') leftPressed = false;
     if (e.code === 'ArrowRight') rightPressed = false;
     if (e.code === 'KeyA') aPressed = false;
     if (e.code === 'KeyD') dPressed = false;
   });
 
-  // Main game loop
+  // Game loop
   function loop() {
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
     drawPaddle();
     drawBall();
-    drawScore();
+    drawScores();
 
     if (!gameOver) {
       updatePaddle();
