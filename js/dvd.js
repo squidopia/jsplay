@@ -61,14 +61,14 @@
     color: '#121212',
     cursor: 'pointer',
     boxShadow: '0 0 10px #00ff99',
-    opacity: '0.1',
+    opacity: '0.3',
     transition: 'opacity 0.4s',
     zIndex: '9999',
   });
   document.body.appendChild(backBtn);
 
   backBtn.onmouseenter = () => backBtn.style.opacity = '1';
-  backBtn.onmouseleave = () => backBtn.style.opacity = '0.1';
+  backBtn.onmouseleave = () => backBtn.style.opacity = '0.3';
   backBtn.onclick = () => {
     localStorage.removeItem('dvdState');
     window.location.href = './play.html';
