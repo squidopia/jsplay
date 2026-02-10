@@ -17,7 +17,7 @@
         over = document.createElement("div");
 
     // GAME BOX
-    g.style = "position:relative;width:420px;height:600px;background:#1b1b1b;border-radius:14px;overflow:hidden;box-shadow:0 0 30px #00ff99";
+    g.style = "position:relative;width:420px;height:600px;background:#1b1b1b;border-radius:14px;overflow:hidden;box-shadow:0 0 30px #ff0000";
 
     // PLAYER
     p.style = "position:absolute;width:60px;height:16px;background:#00ff99;bottom:12px;left:180px;border-radius:8px;box-shadow:0 0 15px #00ff99";
@@ -33,6 +33,7 @@
     let wrap = document.createElement("div");
     wrap.append(g, ui);
     g.append(p, over);
+
     document.body.append(wrap);
 
     let x = 180,
@@ -49,25 +50,27 @@
         return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
     }
 
+    // Create regular cube
     function createCube() {
         let size = 40;
         let c = document.createElement("div");
-        c.style = `position:absolute;width:${size}px;height:${size}px;left:${Math.random()*(420-size)}px;top:-${size}px;background:#00ff99;border-radius:8px;box-shadow:0 0 18px #00ff99`;
+        c.style = `position:absolute;width:${size}px;height:${size}px;left:${Math.random()*(420-size)}px;top:-${size}px;background:red;border-radius:8px;box-shadow:0 0 18px red`;
         g.append(c);
-        cubes.push({ e: c, x: parseFloat(c.style.left), y: -size, size, speed: spd, scoreBonus: 1 });
+        cubes.push({ e: c, x: parseFloat(c.style.left), y: -size, size, speed: spd, scoreBonus: 1, isPowerup: false });
     }
 
+    // Create rainbow powerup
     function createPowerup() {
         let size = 30;
         let c = document.createElement("div");
-        c.style = `position:absolute;width:${size}px;height:${size}px;left:${Math.random()*(420-size)}px;top:-${size}px;background:linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet);border-radius:8px;box-shadow:0 0 18px #fff`;
+        c.style = `position:absolute;width:${size}px;height:${size}px;left:${Math.random()*(420-size)}px;top:-${size}px;border-radius:8px;box-shadow:0 0 18px #fff`;
         g.append(c);
-        cubes.push({ e: c, x: parseFloat(c.style.left), y: -size, size, speed: spd * 0.6, scoreBonus: 10 }); // slower + bigger score
+        cubes.push({ e: c, x: parseFloat(c.style.left), y: -size, size, speed: spd * 0.6, scoreBonus: 10, isPowerup: true, hue: Math.random() * 360 });
     }
 
     setInterval(() => {
         createCube();
-        if (Math.random() < 0.05) createPowerup(); // rare powerup spawn
+        if (Math.random() < 0.2) createPowerup(); // MORE common now
     }, 900);
 
     (function loop() {
@@ -83,6 +86,14 @@
             b.y += b.speed;
             b.e.style.top = b.y + "px";
 
+            // Rainbow powerup effect
+            if (b.isPowerup) {
+                b.hue += 2;
+                b.e.style.background = `hsl(${b.hue % 360}, 100%, 50%)`;
+                b.e.style.boxShadow = `0 0 18px hsl(${b.hue % 360}, 100%, 50%)`;
+            }
+
+            // Collision
             if (rectCollide(x, 584, 60, 16, b.x, b.y, b.size, b.size)) {
                 score += b.scoreBonus;
                 b.e.remove();
@@ -93,7 +104,6 @@
             }
         }
 
-        score++; // score grows over time
         if (score > hs) localStorage.fallHS = hs = score;
         ui.textContent = `Score: ${score} | Highscore: ${hs}`;
 
