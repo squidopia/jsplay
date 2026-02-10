@@ -33,7 +33,6 @@
     let wrap = document.createElement("div");
     wrap.append(g, ui);
     g.append(p, over);
-
     document.body.append(wrap);
 
     let x = 180,
@@ -43,6 +42,9 @@
         spd = 3,
         keys = {};
 
+    // tweakable powerup spawn chance
+    const POWERUP_CHANCE = 0.05; // 8% chance, you can change this easily
+
     onkeydown = e => keys[e.key] = 1;
     onkeyup = e => keys[e.key] = 0;
 
@@ -50,7 +52,7 @@
         return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
     }
 
-    // Create red cube (dangerous)
+    // Create red cube
     function createCube() {
         let size = 40;
         let c = document.createElement("div");
@@ -70,7 +72,7 @@
 
     setInterval(() => {
         createCube();
-        if (Math.random() < 0.3) createPowerup(); // more common powerup
+        if (Math.random() < POWERUP_CHANCE) createPowerup(); // tweakable powerup
     }, 900);
 
     (function loop() {
@@ -93,8 +95,10 @@
                 b.e.style.boxShadow = `0 0 18px hsl(${b.hue % 360}, 100%, 50%)`;
             }
 
-            // Collision
-            if (rectCollide(x, 584, 60, 16, b.x, b.y, b.size, b.size)) {
+            // Collision with top of player only
+            let playerTop = 584; // top y of the rectangle
+            let playerBottom = 600; // bottom y (not used)
+            if (b.y + b.size >= playerTop && b.y <= playerBottom && rectCollide(x, playerTop, 60, b.size, b.x, b.y, b.size, b.size)) {
                 if (b.isPowerup) {
                     score += b.scoreBonus;
                     b.e.remove();
