@@ -17,7 +17,7 @@
         over = document.createElement("div");
 
     // GAME BOX
-    g.style = "position:relative;width:420px;height:600px;background:#1b1b1b;border-radius:14px;overflow:hidden;box-shadow:0 0 30px #ff0000";
+    g.style = "position:relative;width:420px;height:600px;background:#1b1b1b;border-radius:14px;overflow:hidden;box-shadow:0 0 30px #00ff99"; // green glow
 
     // PLAYER
     p.style = "position:absolute;width:60px;height:16px;background:#00ff99;bottom:12px;left:180px;border-radius:8px;box-shadow:0 0 15px #00ff99";
@@ -50,13 +50,13 @@
         return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
     }
 
-    // Create regular cube
+    // Create red cube (dangerous)
     function createCube() {
         let size = 40;
         let c = document.createElement("div");
         c.style = `position:absolute;width:${size}px;height:${size}px;left:${Math.random()*(420-size)}px;top:-${size}px;background:red;border-radius:8px;box-shadow:0 0 18px red`;
         g.append(c);
-        cubes.push({ e: c, x: parseFloat(c.style.left), y: -size, size, speed: spd, scoreBonus: 1, isPowerup: false });
+        cubes.push({ e: c, x: parseFloat(c.style.left), y: -size, size, speed: spd, isPowerup: false });
     }
 
     // Create rainbow powerup
@@ -70,7 +70,7 @@
 
     setInterval(() => {
         createCube();
-        if (Math.random() < 0.2) createPowerup(); // MORE common now
+        if (Math.random() < 0.3) createPowerup(); // more common powerup
     }, 900);
 
     (function loop() {
@@ -86,7 +86,7 @@
             b.y += b.speed;
             b.e.style.top = b.y + "px";
 
-            // Rainbow powerup effect
+            // Rainbow powerup color shift
             if (b.isPowerup) {
                 b.hue += 2;
                 b.e.style.background = `hsl(${b.hue % 360}, 100%, 50%)`;
@@ -95,10 +95,17 @@
 
             // Collision
             if (rectCollide(x, 584, 60, 16, b.x, b.y, b.size, b.size)) {
-                score += b.scoreBonus;
-                b.e.remove();
-                cubes.splice(i, 1);
+                if (b.isPowerup) {
+                    score += b.scoreBonus;
+                    b.e.remove();
+                    cubes.splice(i, 1);
+                } else {
+                    over.style.display = "flex"; // hit red cube = game over
+                    return;
+                }
             } else if (b.y > 620) {
+                // missed cube gives +1 point
+                if (!b.isPowerup) score++;
                 b.e.remove();
                 cubes.splice(i, 1);
             }
