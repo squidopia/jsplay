@@ -1,7 +1,7 @@
 (() => {
-    // GAME WRAPPER (does NOT wipe body)
+    // GAME WRAPPER
     let container = document.getElementById("game-container");
-    if(!container){
+    if (!container) {
         container = document.createElement("div");
         container.id = "game-container";
         document.body.appendChild(container);
@@ -35,11 +35,19 @@
         bottom:12px;
         left:180px;
         border-radius:8px;
-        box-shadow:0 0 15px #00ff99;
+        box-shadow:0 0 20px #00ff99;
     `;
 
     // UI
-    ui.style = "margin-top:10px;text-align:center;font-size:18px;color:#00ff99";
+    ui.style = `
+        margin-top:10px;
+        text-align:center;
+        font-size:20px;
+        font-weight:bold;
+        color:#00ff99;
+        text-shadow: 0 0 10px #00ff99;
+        font-family: monospace;
+    `;
 
     // GAME OVER
     over.style = `
@@ -52,7 +60,7 @@
         background:#000c;
         font-size:32px;
         color:#ff5555;
-        text-shadow:0 0 10px #ff0000
+        text-shadow:0 0 10px #ff0000;
     `;
     over.innerHTML = `
         <div style="margin-bottom:16px;">GAME OVER</div>
@@ -73,6 +81,34 @@
     container.append(g, ui);
     g.append(p, over);
 
+    // BACK BUTTON
+    const backBtn = document.createElement('button');
+    backBtn.textContent = '← Back';
+    Object.assign(backBtn.style, {
+        position: 'fixed',
+        bottom: '10px',
+        left: '10px',
+        padding: '8px 15px',
+        fontSize: '16px',
+        fontWeight: 'bold',
+        background: '#00ff99',
+        border: 'none',
+        borderRadius: '8px',
+        color: '#121212',
+        cursor: 'pointer',
+        boxShadow: '0 0 10px #00ff99',
+        opacity: '0.3',
+        transition: 'opacity 0.4s',
+        zIndex: '9999',
+    });
+    document.body.appendChild(backBtn);
+    backBtn.onmouseenter = () => backBtn.style.opacity = '1';
+    backBtn.onmouseleave = () => backBtn.style.opacity = '0.3';
+    backBtn.onclick = () => {
+        localStorage.removeItem('dvdState');
+        window.location.href = './play.html';
+    };
+
     // GAME VARIABLES
     let x = 180,
         score = 0,
@@ -81,7 +117,6 @@
         spd = 3,
         keys = {};
 
-    // SPAWN CHANCES
     const POWERUP_CHANCE = 0.06;
     const RAINBOW_CIRCLE_CHANCE = 0.01;
     const MAX_SPEED_MULT = 1.6;
@@ -89,12 +124,10 @@
     document.onkeydown = e => keys[e.key] = 1;
     document.onkeyup = e => keys[e.key] = 0;
 
-    // RECTANGLE COLLISION
     function rectCollide(ax, ay, aw, ah, bx, by, bw, bh){
         return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
     }
 
-    // CIRCLE-RECT COLLISION
     function circleRectCollide(cx, cy, radius, rx, ry, rw, rh){
         let closestX = Math.max(rx, Math.min(cx, rx+rw));
         let closestY = Math.max(ry, Math.min(cy, ry+rh));
@@ -108,7 +141,6 @@
         cubes.splice(i,1);
     }
 
-    // CREATE RED CUBE
     function createCube(){
         let size=40;
         let c=document.createElement("div");
@@ -120,13 +152,12 @@
             top:-${size}px;
             background:red;
             border-radius:8px;
-            box-shadow:0 0 18px red;
+            box-shadow:0 0 20px red;
         `;
         g.append(c);
         cubes.push({e:c, x:parseFloat(c.style.left), y:-size, size, speed:spd, isPowerup:false});
     }
 
-    // CREATE RAINBOW RECTANGLE POWERUP
     function createPowerup(){
         let size=30;
         let c=document.createElement("div");
@@ -137,13 +168,12 @@
             left:${Math.random()*(420-size)}px;
             top:-${size}px;
             border-radius:8px;
-            box-shadow:0 0 18px #fff;
+            box-shadow:0 0 20px #fff;
         `;
         g.append(c);
         cubes.push({e:c, x:parseFloat(c.style.left), y:-size, size, speed:spd*0.6, scoreBonus:10, isPowerup:true, hue:Math.random()*360});
     }
 
-    // CREATE SUPER RARE RAINBOW CIRCLE
     function createRainbowCircle(){
         let size=20;
         let c=document.createElement("div");
@@ -154,20 +184,18 @@
             left:${Math.random()*(420-size)}px;
             top:-${size}px;
             border-radius:50%;
-            box-shadow:0 0 18px #fff;
+            box-shadow:0 0 20px #fff;
         `;
         g.append(c);
         cubes.push({e:c, x:parseFloat(c.style.left), y:-size, size, speed:spd*0.2, scoreBonus:50, isPowerup:true, hue:Math.random()*360, isCircle:true});
     }
 
-    // SPAWN CUBES/POWERUPS
     setInterval(()=>{
         createCube();
         if(Math.random()<POWERUP_CHANCE) createPowerup();
         if(Math.random()<RAINBOW_CIRCLE_CHANCE) createRainbowCircle();
     },900);
 
-    // SPEED INCREASE
     const speedIncreaseRate = 0.0005;
     let speedMultiplier = 1;
 
@@ -187,23 +215,21 @@
             b.y += b.speed*speedMultiplier;
             b.e.style.top=b.y+"px";
 
-            // RAINBOW COLOR
+            // RAINBOW COLOR + GLOW
             if(b.isPowerup){
-                b.hue+=2;
-                b.e.style.background=`hsl(${b.hue%360},100%,50%)`;
-                b.e.style.boxShadow=`0 0 18px hsl(${b.hue%360},100%,50%)`;
+                b.hue = (b.hue + 3) % 360;
+                b.e.style.background = `hsl(${b.hue},100%,50%)`;
+                b.e.style.boxShadow = `0 0 20px hsl(${b.hue},100%,50%)`;
             }
 
             let playerTop=584, playerBottom=600;
 
-            // CIRCLE COLLISION
             if(b.isCircle){
                 if(circleRectCollide(b.x+b.size/2,b.y+b.size/2,b.size/2,x,playerTop,60,playerBottom-playerTop)){
                     score+=b.scoreBonus;
                     removeCube(i);
                 }
             } else {
-                // RECT COLLISION
                 if(b.y+b.size>=playerTop && b.y<=playerBottom &&
                    rectCollide(x,playerTop,60,b.size,b.x,b.y,b.size,b.size)){
                     if(b.isPowerup){ score+=b.scoreBonus; removeCube(i); }
@@ -211,7 +237,6 @@
                 }
             }
 
-            // MISS
             if(b.y>620){
                 if(!b.isPowerup) score++;
                 removeCube(i);
